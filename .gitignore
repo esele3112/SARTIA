@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+BD/
+data/cuentas_tutores.csv
+data/sartia_backup.db
+logs/
+*.log
+.env
