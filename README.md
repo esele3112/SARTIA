@@ -24,7 +24,7 @@ Se abre en http://localhost:8501
 > `data/cuentas_tutores.csv`). El detalle completo está en
 > [MANUAL_DE_OPERACION.md](MANUAL_DE_OPERACION.md).
 
-## Recorrido para la evidencia (video 1–3 min)
+
 
 1. **P01 Login** — entrar como `directivo`: se ve el Panel general (P02).
 2. **P02 Panel general** — KPIs, riesgo por grupo, evidencia de las 3 señales.
@@ -47,7 +47,7 @@ sartia/
 ├── entrenar_modelo.py         # Entrena el modelo con datos reales (inicio de ciclo)
 ├── generar_datos_demo.py      # Datos sintéticos calibrados (demo sin datos reales)
 ├── sincronizar_google_sheets.py  # Sync automático de paraescolares y servicio social
-├── BD/                        # Los 3 archivos fuente (NO se sube a GitHub: datos del plantel)
+├── BD/                        # Los 3 archivos fuente 
 ├── data/
 │   ├── sartia.db              # Base SQLite (alumnos, calificaciones, riesgo, usuarios)
 │   ├── sartia_backup.db       # Respaldo manual (no se sube)
@@ -55,7 +55,7 @@ sartia/
 │   └── modelo_sartia.pkl      # Modelo entrenado (Gradient Boosting + SMOTE)
 ├── mockups/                   # Capturas E1–E7 para el documento de evidencias
 ├── requirements.txt
-├── MANUAL_DE_OPERACION.md     # ⭐ Documento principal: operación del ciclo escolar
+├── MANUAL_DE_OPERACION.md     #  Documento principal: operación del ciclo escolar
 ├── TUTORIAL.md                # Guía del ETL paso a paso
 └── README.md
 ```
@@ -63,7 +63,7 @@ sartia/
 ## Flujo del ciclo escolar (resumen)
 
 1. **Inicio de ciclo:** ETL (`etl_sartia.py --dir "BD"`) con los archivos del
-   ciclo anterior → `entrenar_modelo.py` → levantar la app.
+   ciclo anterior  `entrenar_modelo.py` levantar la app.
 2. **Semanas 6 / 11 / 16:** Cargar parcial 1, 2 y 3 desde la app (directivo).
 3. **Cierre de ciclo:** los archivos del ciclo terminado pasan a la carpeta
    `BD` y se repite el paso 1.
@@ -72,7 +72,7 @@ El detalle operativo completo está en **MANUAL_DE_OPERACION.md**.
 
 ## Declarado como simulado en el MVP
 
-- XGBoost pendiente (el demo usa Gradient Boosting; el cambio es de una línea).
-- SHAP formal por alumno pendiente (se muestra importancia global por permutación).
+- XGBoost pendiente (el demo usa Gradient Boosting).
+- SHAP formal por alumno pendiente .
 - Sincronización Google Sheets: script listo, no conectado al demo.
-- Datos ficticios calibrados a las distribuciones reales del plantel (obligatorio por la guía).
+- Datos ficticios calibrados a las distribuciones reales del plantel .
