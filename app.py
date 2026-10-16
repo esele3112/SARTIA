@@ -31,6 +31,8 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
+import shap_utils
+
 st.set_page_config(page_title="SARTIA · CBTA 197", page_icon="⚠", layout="wide")
 
 DB = "data/sartia.db"
@@ -109,6 +111,15 @@ def etiqueta_grupo(row):
 @st.cache_resource
 def cargar_modelo():
     return joblib.load(MODEL)
+
+
+@st.cache_data(show_spinner="Calculando explicaciones SHAP...")
+def explicaciones_shap(feats: pd.DataFrame):
+    """Valores SHAP de todos los alumnos del frame (alineado por índice)."""
+    if feats.empty:
+        return pd.DataFrame(), 0.0
+    shap_df, base = shap_utils.explicar(cargar_modelo(), feats)
+    return shap_df, base
 
 def query(sql, params=()):
     con = sqlite3.connect(DB)
@@ -217,7 +228,8 @@ if menu == "Panel general" and not ES_TUTOR:
         if col not in gg.columns:
             gg[col] = 0
     st.subheader("Riesgo acumulado por grupo")
-    st.bar_chart(gg[["Rojo", "Amarillo", "Verde"]])
+    st.bar_chart(gg[["Rojo", "Amarillo", "Verde"]],
+                 color=["#e03131", "#fab005", "#2f9e44"])
 
     # --- Indicadores del parcial en curso (solo lo cargado en ESTE ciclo) ---
     cal = query("SELECT no_control, materia, p1, p2, p3, a1, a2, a3, max1 "
@@ -355,6 +367,39 @@ elif menu == "Ficha de alumno":
             st.info("El alumno presenta **" + a["nivel"].upper() + "** porque: " + ", ".join(causas) + ".")
         else:
             st.success("Sin factores de riesgo destacados en este corte.")
+
+    # --- Explicación formal del modelo (SHAP) ---
+    st.subheader("¿Qué dice el modelo? (explicación SHAP)")
+    st.caption("Cuánto aportó cada variable a la probabilidad de riesgo de ESTE alumno. "
+               "Barras rojas: aumentan el riesgo · azules: lo reducen.")
+    feats_act = shap_utils.features_activos()
+    fila = feats_act[feats_act["no_control"] == nc]
+    if len(fila) == 0:
+        st.info("Este alumno aún no tiene parciales cargados en el ciclo en curso, "
+                "así que el modelo no puede explicar su riesgo.")
+    else:
+        pack = cargar_modelo()
+        shap_df, base = explicaciones_shap(feats_act)
+        idx = fila.index[0]
+        dp, p_total, p_base = shap_utils.en_probabilidad(base, shap_df)
+        suben, bajan = shap_utils.drivers_alumno(fila.iloc[0], shap_df.loc[idx])
+        c1, c2 = st.columns([3, 2])
+        with c1:
+            try:
+                fig = shap_utils.waterfall_alumno(pack, fila.iloc[0], base, shap_df.loc[idx])
+                st.pyplot(fig, alt="Gráfica waterfall SHAP: contribución de cada variable "
+                                   "a la probabilidad de riesgo del alumno")
+            except Exception as e:
+                st.warning(f"No se pudo generar la gráfica SHAP ({e}).")
+        with c2:
+            st.metric("Probabilidad base del modelo", f"{100 * p_base:.0f} %")
+            st.metric("Con las variables del alumno", f"{100 * p_total[idx]:.0f} %")
+            if suben:
+                st.markdown("**🔺 Lo que sube el riesgo**\n\n" + "\n".join(f"· {s}" for s in suben))
+            if bajan:
+                st.markdown("**🔻 Lo que lo baja**\n\n" + "\n".join(f"· {s}" for s in bajan))
+            st.caption("Aporte en puntos de probabilidad. Método: TreeExplainer sobre "
+                       "el Gradient Boosting de producción.")
     st.subheader("Materias en riesgo")
     mostrar_todas = st.checkbox("Mostrar todas las materias", value=False,
                                 help="Por defecto solo se listan las materias con "
@@ -592,11 +637,20 @@ elif menu == "Modelos y métricas":
     st.success("El modelo de producción se entrena con las calificaciones finales del ciclo "
                "anterior (etiqueta: no acreditada) y se alimenta durante el ciclo actual con "
                "los parciales 1, 2 y 3 a medida que se cargan.")
-    st.subheader("Importancia de variables (permutación, scoring=recall)")
-    imp = pd.DataFrame({"variable": ["prom_p1", "min_p1", "para_pts", "asist_min_p1", "asist_prom_p1", "horas_ss"],
-                        "importancia": [0.85, 0.79, 0.81, 0.52, 0.18, 0.30]}).set_index("variable")
-    st.bar_chart(imp)
-    st.caption("Pendiente en la versión final: valores SHAP locales por alumno y XGBoost en sustitución de Gradient Boosting.")
+    st.subheader("Importancia de variables (SHAP)")
+    feats_act = shap_utils.features_activos()
+    if len(feats_act):
+        shap_df, base = explicaciones_shap(feats_act)
+        dp, _, _ = shap_utils.en_probabilidad(base, shap_df)
+        imp = dp.abs().mean().sort_values(ascending=False)
+        imp.index = [shap_utils.NOMBRES.get(c, c) for c in imp.index]
+        st.bar_chart(imp.rename("contribución media |Δprob|"))
+        st.caption("Contribución media de cada variable en puntos de probabilidad, "
+                   f"calculada con los {len(feats_act):,} alumnos activos del ciclo en curso.")
+    else:
+        st.info("La importancia SHAP se calcula cuando haya parciales cargados del ciclo en curso.")
+    st.caption("Pendiente en la versión final: XGBoost en sustitución de Gradient Boosting "
+               "(misma interfaz, requiere reentrenar y revalidar).")
 
 # ================================================================ P07 EXPORTAR
 elif menu == "Exportar reporte":

@@ -9,5 +9,6 @@ lxml>=4.9
 html5lib>=1.1
 xgboost>=2.0        # sustitución directa de Gradient Boosting (misma interfaz)
 shap>=0.44          # explicabilidad formal por alumno
+matplotlib>=3.7     # gráficas SHAP (waterfall) en la ficha del alumno
 imbalanced-learn>=0.11  # SMOTE oficial (el demo incluye una versión simplificada)
 gspread>=6.0        # sincronización con Google Sheets

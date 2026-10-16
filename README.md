@@ -5,12 +5,19 @@ Entregable 3 — Global Project (20 de octubre de 2026).
 
 ## Cómo ejecutar
 
+**Opción 1 — Doble clic (recomendada):** ejecuta `INICIAR_SARTIA.bat`.
+El lanzador es portable: funciona desde cualquier carpeta donde se copie el
+proyecto. Crea el entorno virtual `.venv` si no existe, instala las
+dependencias si faltan y abre el navegador en http://localhost:8501.
+
+**Opción 2 — Manual:**
+
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Se abre en http://localhost:8501
+Requisito: Python 3.12. Cierra la ventana del lanzador (o Ctrl+C) para detener el sistema.
 
 ## Cuentas de prueba (datos ficticios)
 
@@ -43,10 +50,12 @@ Se abre en http://localhost:8501
 ```
 sartia/
 ├── app.py                     # Aplicación Streamlit (todas las pantallas)
+├── shap_utils.py              # Explicabilidad SHAP (features activos + TreeExplainer)
 ├── etl_sartia.py              # Integra las 3 fuentes del ciclo anterior en SQLite
 ├── entrenar_modelo.py         # Entrena el modelo con datos reales (inicio de ciclo)
 ├── generar_datos_demo.py      # Datos sintéticos calibrados (demo sin datos reales)
 ├── sincronizar_google_sheets.py  # Sync automático de paraescolares y servicio social
+├── INICIAR_SARTIA.bat         # Lanzador portable (doble clic y listo)
 ├── BD/                        # Los 3 archivos fuente 
 ├── data/
 │   ├── sartia.db              # Base SQLite (alumnos, calificaciones, riesgo, usuarios)
@@ -73,6 +82,16 @@ El detalle operativo completo está en **MANUAL_DE_OPERACION.md**.
 ## Declarado como simulado en el MVP
 
 - XGBoost pendiente (el demo usa Gradient Boosting).
-- SHAP formal por alumno pendiente .
 - Sincronización Google Sheets: script listo, no conectado al demo.
 - Datos ficticios calibrados a las distribuciones reales del plantel .
+
+## Explicabilidad SHAP (activa)
+
+- **Ficha de alumno (P04):** gráfica waterfall con el aporte de cada variable
+  a la probabilidad de riesgo del alumno (rojo = aumenta, azul = reduce), más
+  los factores ordenados por impacto en lenguaje natural. Método: SHAP
+  TreeExplainer sobre el Gradient Boosting de producción, convertido a puntos
+  de probabilidad para que sea legible para tutores.
+- **Modelos y métricas (P06):** importancia global de variables calculada con
+  los alumnos activos del ciclo (media de |contribución| en probabilidad),
+  en sustitución de la tabla estática anterior.
